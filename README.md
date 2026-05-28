@@ -6,7 +6,6 @@
 * [cite_start]**Engine Mô phỏng**: Gazebo Harmonic (`ros_gz_sim`)[cite: 2].
 * [cite_start]**Không gian làm việc (Workspace)**: `~/mmrbt`[cite: 2].
 * [cite_start]**Tên gói**: `mainbot` (Dạng ament_cmake)[cite: 2].
-* [cite_start]**Định hướng thiết kế**: Kế thừa kiến trúc từ các dòng robot công nghiệp như rbkairos (Robotnik)[cite: 2].
 
 ---
 
