@@ -1,0 +1,68 @@
+<?xml version="1.0" ?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" xmlns:gz="http://gazebosim.org/schema">
+
+  <!-- Đã giữ nguyên tham số fdir của bạn -->
+  <xacro:macro name="mainbot_mecanum_wheel" params="prefix parent xyz reflect fdir use_mesh:=false">
+    
+    <xacro:property name="wheel_radius" value="0.08" /> 
+    <xacro:property name="wheel_length" value="0.05" /> 
+    <!-- Cập nhật lại khối lượng bánh xe thành 1.0kg theo đúng Specs -->
+    <xacro:property name="wheel_mass"   value="1.0" />  
+
+    <joint name="${prefix}wheel_joint" type="continuous">
+      <parent link="${parent}" />
+      <child link="${prefix}wheel_link" />
+      <origin xyz="${xyz}" rpy="0 0 0" />
+      <axis xyz="0 1 0" />
+      <dynamics damping="0.5" friction="0.2"/>
+      <limit effort="15.0" velocity="20.0" />
+    </joint>
+
+    <link name="${prefix}wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
+        <geometry>
+          <xacro:if value="${use_mesh}">
+            <xacro:if value="${reflect}">
+              <mesh filename="package://mainbot/meshes/wheels/mecanum_left.dae" scale="1 1 1"/>
+            </xacro:if>
+            <xacro:unless value="${reflect}">
+              <mesh filename="package://mainbot/meshes/wheels/mecanum_right.dae" scale="1 1 1"/>
+            </xacro:unless>
+          </xacro:if>
+          <xacro:unless value="${use_mesh}">
+            <cylinder radius="${wheel_radius}" length="${wheel_length}" />
+          </xacro:unless>
+        </geometry>
+        <material name="black">
+          <color rgba="0.1 0.1 0.1 1" />
+        </material>
+      </visual>
+
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
+        <geometry>
+          <sphere radius="${wheel_radius}" />
+        </geometry>
+      </collision>
+
+      <inertial>
+        <mass value="${wheel_mass}" />
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0" />
+        <inertia 
+          ixx="${(wheel_mass*(3*wheel_radius*wheel_radius + wheel_length*wheel_length))/12}" ixy="0" ixz="0"
+          iyy="${(wheel_mass*(3*wheel_radius*wheel_radius + wheel_length*wheel_length))/12}" iyz="0"
+          izz="${(wheel_mass*wheel_radius*wheel_radius)/2}" />
+      </inertial>
+    </link>
+
+    <gazebo reference="${prefix}wheel_link">
+      <mu1>2.0</mu1>
+      <mu2>0.05</mu2> 
+      <fdir1 gz:expressed_in="${parent}">${fdir}</fdir1>
+      
+      <kp>1000000.0</kp>   <kd>100.0</kd>       <max_vel>0.01</max_vel> <min_depth>0.003</min_depth> <material>Gazebo/DarkGrey</material>
+    </gazebo>
+
+  </xacro:macro>
+</robot>
