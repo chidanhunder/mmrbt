@@ -1,61 +1,101 @@
-# [cite_start]MAINBOT - Mecanum Mobile Robot [cite: 1]
+MAINBOT - Mecanum Mobile Robot
+1. Environment & System Information
 
-## [cite_start]1. Thông tin Môi trường & Hệ thống [cite: 2]
-* [cite_start]**Hệ điều hành**: Ubuntu 24.04 LTS[cite: 2].
-* [cite_start]**Phiên bản ROS 2**: Jazzy Jalisco[cite: 2].
-* [cite_start]**Engine Mô phỏng**: Gazebo Harmonic (`ros_gz_sim`)[cite: 2].
-* [cite_start]**Không gian làm việc (Workspace)**: `~/mmrbt`[cite: 2].
-* [cite_start]**Tên gói**: `mainbot` (Dạng ament_cmake)[cite: 2].
+    Operating System: Ubuntu 24.04 LTS.
 
----
+    ROS 2 Version: Jazzy Jalisco.
 
-## 2. Thông số Kỹ thuật Vật lý (Hardware Specs)
+    Simulation Engine: Gazebo Harmonic (ros_gz_sim).
 
-### Khung gầm (Base)
-* [cite_start]**Hình dáng**: Hình hộp chữ nhật $450 \times 400 \times 250$ mm[cite: 3].
-* [cite_start]**Khối lượng**: $20.0$ kg[cite: 4].
-* [cite_start]**Khoảng sáng gầm**: $50$ mm[cite: 4].
-* [cite_start]**Tọa độ gắn (offset so với base_link)**: x = 0.20, y = 0.23, z = -0.095[cite: 5].
+    Workspace: ~/mmrbt.
 
-### [cite_start]Hệ truyền động (4 bánh Mecanum) [cite: 4]
-* [cite_start]**Kích thước**: Bán kính $R = 0.08$ m, Bề rộng $L = 0.05$ m[cite: 4].
-* **Khối lượng chuẩn**: $1.0$ kg / bánh[cite: 5].
+    Package Name: mainbot (ament_cmake format).
 
-### Cảm biến (Sensors)
-* [cite_start]**LiDAR 2D**: Dùng plugin `gpu_lidar`, góc quét 360 độ, tầm nhìn $0.12$m - $10.0$m[cite: 5]. [cite_start]Gắn tại xyz="0.15 0 0.15"[cite: 6].
-* **Camera RGB**: Phân giải $640 \times 480$. [cite_start]Gắn tại xyz="0.23 0 0.10"[cite: 6].
+2. Hardware Specs
+Base
 
----
+    Shape: Rectangular box 450 x 400 x 250 mm.
 
-## [cite_start]3. Các Quy tắc Thiết kế Cốt lõi (Critical Rules) [cite: 7]
-* [cite_start]**Quy tắc Mesh 3D**: Biến `use_mesh` phải luôn để `false`[cite: 7]. [cite_start]Robot render bằng `<cylinder>` và `<box>`[cite: 8].
-* **Quy tắc Collision**: Thẻ `<collision>` của bánh xe bắt buộc dùng hình `<sphere radius="${wheel_radius}">` để chống lỗi viền sắc cạnh gây giật cục[cite: 8].
-* [cite_start]**Quy tắc Động học Mecanum (Chữ X)**: Vector hướng ma sát `<fdir1>` của 4 bánh phải tạo thành hình chữ X để robot trượt ngang đúng chuẩn[cite: 8]. [cite_start]Bánh Trước-Trái (FL) & Sau-Phải (RR) = 1 -1 0[cite: 8]. [cite_start]Bánh Trước-Phải (FR) & Sau-Trái (RL) = 1 1 0[cite: 8].
-* [cite_start]**Quy tắc Bám đường & Chống lết bánh (ABS)**: Khớp bánh xe (`<joint>`) phải có `<dynamics damping="0.1" friction="0.1"/>` và giới hạn mô-men xoắn `<limit effort="15.0".../>`[cite: 9].
-* **Quy tắc Ma sát Gazebo Harmonic**: `<mu1>2.0</mu1>`, `<mu2>0.05</mu2>` (Không để mu2 = 0.0 để tránh lỗi solver)[cite: 9]. Cú pháp bắt buộc: `<fdir1 gz:expressed_in="${parent}">${fdir}</fdir1>`[cite: 9].
+    Mass: 20.0 kg.
 
----
+    Ground Clearance: 50 mm.
 
-## 4. Cấu trúc Điều khiển & Điều hướng Hiện tại
-* [cite_start]**Dịch topic (`ros_gz_bridge`)**: Cầu nối dữ liệu `/scan`, `/camera/image_raw`, `joint_states`, `/odom`, `/tf` (Gazebo -> ROS), `/cmd_vel` (ROS -> Gazebo)[cite: 10].
-* **Điều hướng (Nav2)**: Tích hợp gói `nav2_bringup`[cite: 11]. Bộ quy hoạch cục bộ (`DWBLocalPlanner`) có thông số tối ưu cho xe đa hướng: `vy_samples > 0` và `max_vel_y = 0.45`, cho phép trượt ngang né vật cản[cite: 11].
-## 2. Cấu trúc Thư mục (Directory Structure)
-```text
-~/mmrbt/src/mainbot/
-├── CMakeLists.txt         # Đã thêm rule install cho config/ và maps/
-├── package.xml
-├── config/
-│   └── slam.yaml          # Cấu hình SLAM Toolbox cho robot mecanum
-├── launch/
-│   ├── bringup.launch.py  # RViz, Gazebo, Robot State Pub, Bridge
-│   └── slam.launch.py     # Khởi chạy SLAM Toolbox + ép use_sim_time
-├── maps/                  # Chứa file bản đồ .yaml và .pgm sau khi lưu
-├── rviz/
-│   └── urdf_config.rviz   # Đã cấu hình đúng QoS cho Map, LiDAR, Camera
-├── urdf/
-│   ├── base/base.urdf.xacro
-│   ├── wheels/mecanum_wheel.urdf.xacro
-│   ├── sensors/lidar.urdf.xacro & camera.urdf.xacro
-│   └── mainbot.urdf.xacro # File lắp ráp tổng, chứa các plugin Gazebo
-└── worlds/
-    └── empty.sdf          # Đã chèn plugin render engine ogre2
+    Mounting Coordinates (offset from base_link): x = 0.20, y = 0.23, z = -0.095.
+
+Drivetrain (4 Mecanum Wheels)
+
+    Dimensions: Radius R = 0.08 m, Width L = 0.05 m.
+
+    Standard Mass: 1.0 kg / wheel.
+
+Sensors
+
+    2D LiDAR: Uses gpu_lidar plugin, 360-degree FOV, range 0.12 m - 10.0 m. Mounted at xyz="0.15 0 0.15".
+
+    RGB Camera: Resolution 640 x 480. Mounted at xyz="0.23 0 0.10".
+
+3. Critical Design Rules
+
+    3D Mesh Rule: The use_mesh variable must always be set to false. The robot is rendered using <cylinder> and <box>.
+
+    Collision Rule: The <collision> tag of the wheels must strictly use a <sphere radius="${wheel_radius}"> shape to prevent sharp edge errors causing jerky movements.
+
+    Mecanum Kinematics Rule (X-Shape): The friction direction vector <fdir1> of the 4 wheels must form an X shape for the robot to strafe correctly.
+
+        Front-Left (FL) & Rear-Right (RR): 1 -1 0
+
+        Front-Right (FR) & Rear-Left (RL): 1 1 0
+
+    Traction & Anti-Slip Rule (ABS): Wheel joints (<joint>) must have <dynamics damping="0.1" friction="0.1"/> and an effort limit <limit effort="15.0".../>.
+
+    Gazebo Harmonic Friction Rule: <mu1>2.0</mu1>, <mu2>0.05</mu2> (Do not set mu2 = 0.0 to avoid solver errors). Mandatory syntax: <fdir1 gz:expressed_in="${parent}">${fdir}</fdir1>.
+
+4. Current Control & Navigation Structure
+
+    Topic Bridge (ros_gz_bridge): Data bridge for /scan, /camera/image_raw, joint_states, /odom, /tf (Gazebo -> ROS), /cmd_vel (ROS -> Gazebo).
+
+    Navigation (Nav2): Integrates the nav2_bringup package. The local planner (DWBLocalPlanner) has optimized parameters for omnidirectional vehicles: vy_samples > 0 and max_vel_y = 0.45, allowing lateral sliding to avoid obstacles.
+
+5. Directory Structure
+Plaintext
+
+        ~/mmrbt/src/mainbot/
+        ├── CMakeLists.txt         # Added install rules for config/ and maps/
+        ├── package.xml
+        ├── config/
+        │   └── slam.yaml          # SLAM Toolbox config for mecanum robot
+        ├── launch/
+        │   ├── bringup.launch.py  # RViz, Gazebo, Robot State Pub, Bridge
+        │   └── slam.launch.py     # Launch SLAM Toolbox + force use_sim_time
+        ├── maps/                  # Contains .yaml and .pgm map files after saving
+        ├── rviz/
+        │   └── urdf_config.rviz   # Properly configured QoS for Map, LiDAR, Camera
+        ├── urdf/
+        │   ├── base/base.urdf.xacro
+        │   ├── wheels/mecanum_wheel.urdf.xacro
+        │   ├── sensors/lidar.urdf.xacro & camera.urdf.xacro
+        │   └── mainbot.urdf.xacro # Main assembly file, contains Gazebo plugins
+        └── worlds/
+            └── empty.sdf          # Inserted ogre2 render engine plugin
+
+6. Setup & Execution
+
+    Note: Gitclone to clone this git to your computer.
+
+ To run directly gazebo and rviz:
+
+
+    cd ~/mmrbt  
+    colcon build --symlink-install  
+    source install/setup.bash  
+    ros2 launch mainbot bringup.launch.py  
+
+ Run smooth velocity python:
+
+
+        ros2 launch mainbot velocity.launch.py
+
+ Open control for robot ( use cmd/vel )    
+ 
+    ros2 run teleop_twist_keyboard teleop_twist_keyboard
+        
