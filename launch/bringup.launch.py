@@ -1,7 +1,7 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction 
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -19,10 +19,11 @@ def generate_launch_description():
     robot_description = {'robot_description': robot_description_config.toxml(), 'use_sim_time': True}
     
     # 2. File Paths
-    world_file = os.path.join(pkg_share, 'worlds', 'empty.sdf')
+    world_file = os.path.join(pkg_share, 'worlds', 'demo.sdf')
     rviz_config_file = os.path.join(pkg_share, 'rviz', 'urdf_config.rviz')
     slam_params_file = os.path.join(pkg_share, 'config', 'slam.yaml')
     nav2_params_file = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
+    ekf_config_file = os.path.join(pkg_share, 'config', 'ekf.yaml')
 
     # 3. Nodes
     robot_state_publisher_node = Node(
@@ -52,25 +53,20 @@ def generate_launch_description():
 
     # 4. Bridge: Chuyển dữ liệu giữa Gazebo và ROS 2
     # Khởi chạy ROS-Gazebo Bridge
+    # 4. Bridge: Chuyển dữ liệu giữa Gazebo và ROS 2
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
+        parameters=[{'use_sim_time': True}],
         arguments=[
-            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            #'/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
             '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
             '/camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
-            '/world/empty/model/mainbot/joint_state@sensor_msgs/msg/JointState[gz.msgs.Model',
-            
-            # --- CÁC TOPIC MỚI BỔ SUNG CHO NAVIGATION & SLAM ---
-            # Nhận lệnh điều tốc từ ROS 2 chuyển vào Gazebo (hướng đi vào: ] )
             '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
-            # Gửi dữ liệu đo đạc quãng đường từ Gazebo ra ROS 2 (hướng đi ra: [ )
             '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
-            # Gửi dữ liệu TF động (odom -> base_footprint) từ Gazebo ra ROS 2
-            '/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V'
-        ],
-        remappings=[
-            ('/world/empty/model/mainbot/joint_state', '/joint_states'),
+            #'/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V', # <--- [QUAN TRỌNG]: THÊM DẤU PHẨY TẠI ĐÂY
+            '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
+            '/imu/data@sensor_msgs/msg/Imu[gz.msgs.IMU',
         ],
         output='screen'
     )
@@ -94,6 +90,7 @@ def generate_launch_description():
         arguments=['-d', rviz_config_file],
         parameters=[{'use_sim_time': True}]
     )
+    #nav2
     nav2_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'navigation_launch.py')
@@ -104,6 +101,14 @@ def generate_launch_description():
             'autostart': 'true'
         }.items()
     )
+    #ekf
+    ekf_node = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        name='ekf_filter_node',
+        output='screen',
+        parameters=[ekf_config_file, {'use_sim_time': True}]
+    )
 
     return LaunchDescription([
         set_use_sim_time,
@@ -113,8 +118,7 @@ def generate_launch_description():
         bridge,
         rviz_node,
         slam_launch,
-        nav2_launch
-        #velocity_smoother_node  # <--- Bổ sung dòng này
+        nav2_launch,
+        ekf_node,
     ])
-     
     

@@ -1,0 +1,29 @@
+ekf_filter_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 50.0
+    two_d_mode: true
+    publish_tf: true
+
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: robot_base_footprint
+    world_frame: odom
+
+    # 1. Cấu hình lấy dữ liệu từ bánh xe (Odometry)
+    odom0: /odom
+    odom0_config: [false, false, false, # x, y, z
+                   false, false, false, # roll, pitch, yaw
+                   true,  true,  false, # vx (tịnh tiến tới), vy (trượt ngang), vz
+                   false, false, true,  # vroll, vpitch, vyaw (vận tốc góc)
+                   false, false, false] # ax, ay, az
+    odom0_differential: false
+
+    # 2. Cấu hình lấy dữ liệu từ IMU (Bù trượt)
+    imu0: /imu/data
+    imu0_config: [false, false, false,
+                  false, false, true,   # Chỉ lấy góc Yaw
+                  false, false, false,
+                  false, false, true,   # Lấy vận tốc xoay Yaw
+                  false, false, false]  # Gia tốc tịnh tiến X
+    imu0_differential: false

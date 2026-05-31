@@ -60,27 +60,39 @@ Sensors
 Plaintext
 
         ~/mmrbt/src/mainbot/
-        ├── CMakeLists.txt         # Added install rules for config/ and maps/
+        ├── CMakeLists.txt         
         ├── package.xml
         ├── config/
-        │   └── slam.yaml          # SLAM Toolbox config for mecanum robot
+        |   ├── nav2.yaml
+        |   ├── efk.yaml
+        │   └── slam.yaml          
         ├── launch/
-        │   ├── bringup.launch.py  # RViz, Gazebo, Robot State Pub, Bridge
-        │   └── slam.launch.py     # Launch SLAM Toolbox + force use_sim_time
-        ├── maps/                  # Contains .yaml and .pgm map files after saving
+        │   ├── bringup.launch.py
+        │   ├── gazebo.launch.py
+        │   ├── mapping.launch.py  
+        │   └── slam.launch.py     
+        ├── maps/                  
         ├── rviz/
-        │   └── urdf_config.rviz   # Properly configured QoS for Map, LiDAR, Camera
+        │   └── urdf_config.rviz    
         ├── urdf/
         │   ├── base/base.urdf.xacro
         │   ├── wheels/mecanum_wheel.urdf.xacro
-        │   ├── sensors/lidar.urdf.xacro & camera.urdf.xacro
-        │   └── mainbot.urdf.xacro # Main assembly file, contains Gazebo plugins
+        │   ├── sensors/
+        │       ├── lidar.urdf.xacro
+        │       ├── camera.urdf.xacro
+        │       └── imu.urdf.xacro
+        │   └── mainbot.urdf.xacro plugins
         └── worlds/
-            └── empty.sdf          # Inserted ogre2 render engine plugin
+            ├── demo.sdf
+            └── empty.sdf          
 
 6. Setup & Execution
 
-    Note: Gitclone to clone this git to your computer.
+    Note: Gitclone to clone this git to your computer:
+
+        mkdir -p ~/mmrbt/src
+        cd ~/mmrbt   
+        git clone https://github.com/chidanhunder/mmrbt.git
 
  To run directly gazebo and rviz:
 
@@ -90,12 +102,7 @@ Plaintext
     source install/setup.bash  
     ros2 launch mainbot bringup.launch.py  
 
- Run smooth velocity python:
-
-
-        ros2 launch mainbot velocity.launch.py
-
- Open control for robot ( use cmd/vel )    
+ Open control for robot ( use /cmd_vel )    
  
-    ros2 run teleop_twist_keyboard teleop_twist_keyboard
+    ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=cmd_vel_in
         

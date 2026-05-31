@@ -11,12 +11,12 @@ find_package(ament_cmake REQUIRED)
 # Install directories so ROS 2 can find them after building
 install(DIRECTORY
   launch
+  models
   rviz
   urdf
   worlds
   config
   maps
-  scripts/velocity_smoother.py
   DESTINATION share/${PROJECT_NAME}
 )
 
