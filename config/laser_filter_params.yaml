@@ -1,0 +1,27 @@
+scan_filter:
+  ros__parameters:
+    # Bắt buộc bật use_sim_time khi dùng với Gazebo Harmonic
+    use_sim_time: true
+    
+    # Định nghĩa chuỗi các bộ lọc
+    filter1:
+      name: box_filter
+      type: laser_filters/LaserScanBoxFilter
+      params:
+        # HỆ QUY CHIẾU: Bắt buộc dùng khung tọa độ đã được quy định cho mainbot
+        box_frame: "robot_base_footprint"
+
+        # KÍCH THƯỚC HỘP LỌC (Vùng không gian bị cắt bỏ)
+        # Kích thước thực tế: X = ±0.225, Y = ±0.20. Đã cộng thêm margin an toàn.
+        max_x: 0.25      # Cắt các điểm laser phía trước từ tâm đến 25cm
+        min_x: -0.25     # Cắt các điểm laser phía sau từ tâm đến -25cm
+        
+        max_y: 0.25      # Cắt các điểm laser phía bên trái từ tâm đến 25cm
+        min_y: -0.25     # Cắt các điểm laser phía bên phải từ tâm đến -25cm
+        
+        # Lidar nằm ở Z=0.15, khung xe cao 0.25m và cách đất 0.05m
+        max_z: 0.35      # Giới hạn đỉnh hộp lọc 
+        min_z: -0.05     # Giới hạn đáy hộp lọc (Sát mặt đất)
+
+        # Cấu hình hành vi của bộ lọc
+        invert: false    # Đặt là false nghĩa là "XÓA tất cả các điểm NẰM TRONG hộp này"

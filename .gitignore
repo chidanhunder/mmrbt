@@ -1,0 +1,33 @@
+# ==========================================
+# Cấu hình .gitignore cho ROS 2 & Robotics
+# ==========================================
+
+# 1. Các file sinh ra khi biên dịch (CMake / C / C++)
+build/
+install/
+log/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+*.o
+*.so
+*.a
+
+# 2. File cache của Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 3. File rác của hệ điều hành Ubuntu / Linux
+*~
+*.swp
+*.swo
+.Trash-*
+.DS_Store
+
+# 4. Cấu hình của các Text Editor / IDE (Nên bỏ qua để tránh xung đột cấu hình cá nhân)
+.vscode/
+.idea/
+*.sublime-workspace

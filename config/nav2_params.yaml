@@ -1,0 +1,254 @@
+bt_navigator:
+  ros__parameters:
+    use_sim_time: True
+    vel_topic: "/cmd_vel" # <--- SỬA LẠI: Trỏ thẳng về topic cầu nối Gazebo
+    global_frame: map
+    robot_base_frame: robot_base_footprint
+    odom_topic: "/odom"   # <--- SỬA LẠI: Trỏ thẳng về topic cầu nối Gazebo
+    bt_loop_duration: 10
+    default_server_timeout: 20
+    # Sử dụng cây hành vi mặc định cho điều hướng tới điểm
+    #default_nav_to_pose_bt_xml: "replace_with_default_path_if_needed/navigate_to_pose_w_replanning_and_recovery.xml"
+
+controller_server:
+  ros__parameters:
+    use_sim_time: True
+    controller_frequency: 10.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    
+    # 1. BỔ SUNG KHAI BÁO CÁC PLUGIN BẮT BUỘC NÀY
+    progress_checker_plugin: "progress_checker"
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+
+    # Cấu hình cho Progress Checker
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.2
+      movement_time_allowance: 15.0
+
+    # Cấu hình cho Goal Checker
+    general_goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      stateful: True
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.35
+
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      
+      debug_trajectory_details: True
+      split_path: true
+      
+      # Vận tốc (Giữ nguyên của bạn vì đã hợp lý)
+      min_vel_x: -0.5
+      min_vel_y: -0.3 
+      max_vel_x: 0.5
+      max_vel_y: 0.3  
+      max_vel_theta: 1.0
+      min_speed_xy: 0.05
+      max_speed_xy: 0.5
+      min_speed_theta: 0.2
+      
+      # 1. GIẢM GIA TỐC: Đồng bộ với giới hạn vật lý của Gazebo và Velocity Smoother
+      acc_lim_x: 0.6      # Giảm từ 1.5 xuống
+      acc_lim_y: 0.6      # Giảm từ 1.5 xuống
+      acc_lim_theta: 1.0  # Giảm từ 2.0 xuống
+      decel_lim_x: -0.6
+      decel_lim_y: -0.6
+      decel_lim_theta: -1.0
+      
+      # Lấy mẫu
+      vx_samples: 20
+      vy_samples: 20    
+      vtheta_samples: 40
+      syndata_display: 10
+      holonomic_robot: True 
+      
+      # Nới lỏng dung sai để tránh giật cục khi đến đích
+      transform_tolerance: 0.5  # Tăng lên 0.5 để giảm độ nhạy trễ TF từ Gazebo
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.35
+      
+      # 2. ĐIỀU CHỈNH TRỌNG SỐ (CRITICS) CHO MECANUM
+      BaseObstacle:
+        scale: 0.02
+      PathAlign:
+        scale: 5.0     # Giảm một nửa (từ 10.0) để xe bớt đánh lái liên tục
+      GoalAlign:
+        scale: 8.0     # Giảm (từ 15.0) để bớt xoay ép khi lại gần đích
+      PathDist:
+        scale: 32.0    # Giữ nguyên để bám sát quỹ đạo X/Y
+      GoalDist:
+        scale: 24.0    # Giữ nguyên để đi đến đích
+      Oscillation:
+        scale: 5.0     # TĂNG MẠNH để DWB nhận diện và phạt nặng hành vi giật lắc
+        oscillation_reset_dist: 0.05 # Xe chỉ cần nhích 5cm là reset cờ phạt
+        oscillation_reset_angle: 0.1
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      always_send_full_costmap: True
+      track_unknown_space: true
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: robot_base_footprint
+      use_sim_time: True
+      rolling_window: true
+      width: 5
+      height: 5
+      resolution: 0.05
+      
+      footprint: "[ [0.175, 0.15], [0.175, -0.15], [-0.175, -0.15], [-0.175, 0.15] ]"
+      plugins: ["voxel_layer", "inflation_layer"]
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.55
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
+        enabled: True
+        publish_voxel_map: True
+        origin_z: 0.0
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        observation_sources: scan
+        scan:
+          topic: /scan_filtered
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 10.0 
+          raytrace_min_range: 0.12  
+          obstacle_max_range: 9.5
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      always_send_full_costmap: True
+      track_unknown_space: true
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: map
+      robot_base_frame: robot_base_footprint
+      use_sim_time: True
+      width: 5
+      height: 5
+      origin_x: -2.5
+      origin_y: -2.5
+     
+      footprint: "[ [0.175, 0.15], [0.175, -0.15], [-0.175, -0.15], [-0.175, 0.15] ]"
+      resolution: 0.05
+      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan_filtered
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 10.0 
+          raytrace_min_range: 0.12 
+          obstacle_max_range: 9.5
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.55
+
+planner_server:
+  ros__parameters:
+    use_sim_time: True
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner::NavfnPlanner"
+      tolerance: 0.5
+      use_astar: false
+      allow_unknown: true
+
+behavior_server:
+  ros__parameters:
+    use_sim_time: True
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    spin:
+      plugin: "nav2_behaviors::Spin"
+    backup:
+      plugin: "nav2_behaviors::BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors::DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors::Wait"
+    global_frame: map
+    robot_base_frame: robot_base_footprint
+    transform_tolerance: 0.1
+
+waypoint_follower:
+  ros__parameters:
+    use_sim_time: True
+    loop_rate: 20
+    stop_on_failure: false
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 200
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: True
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.5, 0.3, 1.0]  
+    min_velocity: [-0.5, -0.3, -1.0]
+    max_accel: [0.5, 0.5, 1.0]      
+    max_decel: [-0.5, -0.5, -1.0]
+    odom_topic: "/odom"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0
+collision_monitor:
+  ros__parameters:
+    use_sim_time: True
+    base_frame_id: "robot_base_footprint"
+    odom_frame_id: "odom"
+    cmd_vel_in_topic: "cmd_vel_smoothed"
+    cmd_vel_out_topic: "cmd_vel"
+    transform_tolerance: 0.5
+    source_timeout: 5.0
+    stop_pub_timeout: 2.0
+    polygons: ["PolygonStop"]
+    PolygonStop:
+      type: "polygon"
+      points: "[ [0.25, 0.20], [0.25, -0.20], [-0.25, -0.20], [-0.25, 0.20] ]"
+      action_type: "stop"
+      min_points: 4
+      visualize: True
+      polygon_pub_topic: "polygon_stop"
+    observation_sources: ["scan"]
+    scan:
+      type: "scan"
+      topic: "/scan_filtered"
+
+docking_server:
+  ros__parameters:
+    use_sim_time: True
+    controller_frequency: 10.0
+    dock_plugins: ['charging_dock']
+    charging_dock:
+      plugin: 'opennav_docking::SimpleChargingDock'
+      docking_threshold: 0.05
+      staging_distance: 0.5
+      use_battery_status: False
